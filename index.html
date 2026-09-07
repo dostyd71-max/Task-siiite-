@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Task</title>
+<style>
+  :root {
+    --bg: #14171c;
+    --panel: #1c2028;
+    --border: #2c313b;
+    --text: #eceef1;
+    --muted: #8b93a1;
+    --accent: #5fb896;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+
+  .admin-toggle {
+    position: fixed;
+    top: 16px;
+    left: 16px;
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--panel);
+    color: var(--muted);
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .admin-toggle:hover { color: var(--text); border-color: var(--accent); }
+
+  .card {
+    max-width: 480px;
+    width: 100%;
+  }
+  .task-label {
+    color: var(--muted);
+    font-size: 14px;
+    margin-bottom: 16px;
+    text-align: center;
+  }
+  .task-field {
+    margin-bottom: 16px;
+  }
+  .task-field .field-label {
+    color: var(--accent);
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+  .task-field .field-value {
+    font-size: 17px;
+    line-height: 1.5;
+    white-space: pre-wrap;
+  }
+  .task-text-plain {
+    font-size: 20px;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    text-align: center;
+  }
+
+  .overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(10,12,15,0.75);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    overflow-y: auto;
+  }
+  .hidden { display: none; }
+
+  .modal {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 28px;
+    width: 100%;
+    max-width: 380px;
+  }
+  .modal h2 {
+    margin: 0 0 16px;
+    font-size: 18px;
+  }
+  .modal input[type="password"] {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: #101318;
+    color: var(--text);
+    font-size: 15px;
+    margin-bottom: 12px;
+  }
+  .error-text {
+    color: #e07a7a;
+    font-size: 13px;
+    min-height: 18px;
+    margin-bottom: 8px;
+  }
+  button.primary {
+    width: 100%;
+    padding: 10px;
+    border-radius: 8px;
+    border: none;
+    background: var(--accent);
+    color: #0c1210;
+    font-weight: 600;
+    font-size: 15px;
+    cursor: pointer;
+  }
+
+  .admin-panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    max-width: 520px;
+    width: 100%;
+    margin: 20px 0;
+  }
+  .admin-panel h2 { margin-top: 0; font-size: 18px; }
+  .admin-panel p.hint {
+    color: var(--muted);
+    font-size: 13px;
+    margin-top: -8px;
+    margin-bottom: 16px;
+  }
+  .field-slot {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px;
+    margin-bottom: 10px;
+  }
+  .field-slot .field-name-input {
+    width: 100%;
+    padding: 8px 10px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: #0e1116;
+    color: var(--accent);
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+  .field-slot .field-value-input {
+    width: 100%;
+    padding: 8px 10px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: #101318;
+    color: var(--text);
+    font-size: 14px;
+    resize: vertical;
+    min-height: 40px;
+    font-family: inherit;
+  }
+  .status-text {
+    font-size: 13px;
+    color: var(--muted);
+    min-height: 18px;
+    margin-top: 8px;
+  }
+  .task-row {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px;
+    margin-bottom: 8px;
+  }
+  .task-row .task-row-fields {
+    font-size: 13px;
+    margin-bottom: 8px;
+  }
+  .task-row .task-row-fields div {
+    margin-bottom: 2px;
+  }
+  .task-row .task-row-fields b {
+    color: var(--accent);
+  }
+  .task-row button {
+    border: none;
+    background: #3a2226;
+    color: #e07a7a;
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-size: 12px;
+    cursor: pointer;
+  }
+  .task-row button:hover { background: #4a2a2f; }
+</style>
+</head>
+<body>
+
+  <button class="admin-toggle" id="adminToggle">A</button>
+
+  <!-- Visitor view -->
+  <div class="card" id="visitorView">
+    <div class="task-label">Your task</div>
+    <div id="taskDisplay">Loading...</div>
+  </div>
+
+  <!-- Password modal -->
+  <div class="overlay hidden" id="loginOverlay">
+    <div class="modal">
+      <h2>Admin login</h2>
+      <input type="password" id="passwordInput" placeholder="Password">
+      <div class="error-text" id="loginError"></div>
+      <button class="primary" id="loginBtn">Log in</button>
+    </div>
+  </div>
+
+  <!-- Admin panel -->
+  <div class="overlay hidden" id="adminOverlay">
+    <div class="admin-panel">
+      <h2>Add a task</h2>
+      <p class="hint">Fill in field name + value for each slot you want to use. Empty slots are skipped.</p>
+
+      <div class="field-slot">
+        <input class="field-name-input" placeholder="Field name (e.g. Date)">
+        <textarea class="field-value-input" placeholder="Value"></textarea>
+      </div>
+      <div class="field-slot">
+        <input class="field-name-input" placeholder="Field name (e.g. Task name)">
+        <textarea class="field-value-input" placeholder="Value"></textarea>
+      </div>
+      <div class="field-slot">
+        <input class="field-name-input" placeholder="Field name (e.g. Description)">
+        <textarea class="field-value-input" placeholder="Value"></textarea>
+      </div>
+      <div class="field-slot">
+        <input class="field-name-input" placeholder="Field name">
+        <textarea class="field-value-input" placeholder="Value"></textarea>
+      </div>
+      <div class="field-slot">
+        <input class="field-name-input" placeholder="Field name">
+        <textarea class="field-value-input" placeholder="Value"></textarea>
+      </div>
+      <div class="field-slot">
+        <input class="field-name-input" placeholder="Field name">
+        <textarea class="field-value-input" placeholder="Value"></textarea>
+      </div>
+
+      <button class="primary" id="uploadBtn">Upload as one task</button>
+      <div class="status-text" id="uploadStatus"></div>
+
+      <h2 style="margin-top:24px;">Current tasks</h2>
+      <div id="taskList"></div>
+    </div>
+  </div>
+
+<script>
+  // Identify this visitor's browser so they don't get repeat tasks
+  function getVisitorId() {
+    let id = localStorage.getItem('visitorId');
+    if (!id) {
+      id = 'v-' + Math.random().toString(36).slice(2) + Date.now().toString(36);
+      localStorage.setItem('visitorId', id);
+    }
+    return id;
+  }
+
+  function renderTaskFields(container, fields) {
+    container.innerHTML = '';
+    if (!Array.isArray(fields)) {
+      // fallback for old plain-text tasks
+      const div = document.createElement('div');
+      div.className = 'task-text-plain';
+      div.textContent = fields;
+      container.appendChild(div);
+      return;
+    }
+    fields.forEach((f) => {
+      const wrap = document.createElement('div');
+      wrap.className = 'task-field';
+      const label = document.createElement('div');
+      label.className = 'field-label';
+      label.textContent = f.label;
+      const value = document.createElement('div');
+      value.className = 'field-value';
+      value.textContent = f.value;
+      wrap.appendChild(label);
+      wrap.appendChild(value);
+      container.appendChild(wrap);
+    });
+  }
+
+  async function loadTask() {
+    const uid = getVisitorId();
+    const displayEl = document.getElementById('taskDisplay');
+    try {
+      const res = await fetch('/.netlify/functions/tasks?uid=' + encodeURIComponent(uid));
+      const data = await res.json();
+      if (data.task) {
+        renderTaskFields(displayEl, data.task);
+      } else {
+        displayEl.textContent = data.message || 'No tasks available yet.';
+      }
+    } catch (e) {
+      displayEl.textContent = 'Could not load a task. Please refresh.';
+    }
+  }
+  loadTask();
+
+  // Admin login flow
+  const adminToggle = document.getElementById('adminToggle');
+  const loginOverlay = document.getElementById('loginOverlay');
+  const adminOverlay = document.getElementById('adminOverlay');
+  const passwordInput = document.getElementById('passwordInput');
+  const loginError = document.getElementById('loginError');
+  const loginBtn = document.getElementById('loginBtn');
+
+  let adminPassword = null;
+
+  adminToggle.addEventListener('click', () => {
+    loginOverlay.classList.remove('hidden');
+    passwordInput.value = '';
+    loginError.textContent = '';
+    passwordInput.focus();
+  });
+
+  function attemptLogin() {
+    const val = passwordInput.value;
+    if (val === '111222') {
+      adminPassword = val;
+      loginOverlay.classList.add('hidden');
+      adminOverlay.classList.remove('hidden');
+      loadTaskList();
+    } else {
+      loginError.textContent = 'Incorrect password.';
+    }
+  }
+  loginBtn.addEventListener('click', attemptLogin);
+  passwordInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') attemptLogin();
+  });
+  loginOverlay.addEventListener('click', (e) => {
+    if (e.target === loginOverlay) loginOverlay.classList.add('hidden');
+  });
+
+  async function loadTaskList() {
+    const listEl = document.getElementById('taskList');
+    listEl.textContent = 'Loading...';
+    try {
+      const res = await fetch('/.netlify/functions/tasks', {
+        headers: { 'x-admin-password': adminPassword }
+      });
+      const data = await res.json();
+      renderTaskList(data.tasks || []);
+    } catch (e) {
+      listEl.textContent = 'Could not load tasks.';
+    }
+  }
+
+  function renderTaskList(tasks) {
+    const listEl = document.getElementById('taskList');
+    listEl.innerHTML = '';
+    if (tasks.length === 0) {
+      listEl.textContent = 'No tasks yet.';
+      return;
+    }
+    tasks.forEach((t) => {
+      const row = document.createElement('div');
+      row.className = 'task-row';
+
+      const fieldsDiv = document.createElement('div');
+      fieldsDiv.className = 'task-row-fields';
+      const fields = Array.isArray(t.fields) ? t.fields : [{ label: 'Task', value: t.text || '' }];
+      fields.forEach((f) => {
+        const line = document.createElement('div');
+        const b = document.createElement('b');
+        b.textContent = f.label + ': ';
+        line.appendChild(b);
+        line.appendChild(document.createTextNode(f.value));
+        fieldsDiv.appendChild(line);
+      });
+
+      const delBtn = document.createElement('button');
+      delBtn.textContent = 'Delete';
+      delBtn.addEventListener('click', () => deleteTask(t.id));
+
+      row.appendChild(fieldsDiv);
+      row.appendChild(delBtn);
+      listEl.appendChild(row);
+    });
+  }
+
+  async function deleteTask(id) {
+    try {
+      const res = await fetch('/.netlify/functions/tasks', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-admin-password': adminPassword
+        },
+        body: JSON.stringify({ id })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        renderTaskList(data.tasks || []);
+      }
+    } catch (e) {
+      // silently ignore; task list will just not update
+    }
+  }
+
+  // Admin upload flow
+  const uploadBtn = document.getElementById('uploadBtn');
+  const uploadStatus = document.getElementById('uploadStatus');
+
+  uploadBtn.addEventListener('click', async () => {
+    const slots = Array.from(document.querySelectorAll('.admin-panel .field-slot'));
+    const fields = slots.map((slot) => ({
+      label: slot.querySelector('.field-name-input').value.trim(),
+      value: slot.querySelector('.field-value-input').value.trim()
+    }));
+
+    const hasAnyValue = fields.some((f) => f.value.length > 0);
+    if (!hasAnyValue) {
+      uploadStatus.textContent = 'Fill in at least one field with a value.';
+      return;
+    }
+
+    uploadStatus.textContent = 'Uploading...';
+    try {
+      const res = await fetch('/.netlify/functions/tasks', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-admin-password': adminPassword
+        },
+        body: JSON.stringify({ fields })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        uploadStatus.textContent = 'Uploaded. Total tasks: ' + data.totalTasks;
+        slots.forEach((slot) => {
+          slot.querySelector('.field-name-input').value = '';
+          slot.querySelector('.field-value-input').value = '';
+        });
+        loadTaskList();
+      } else {
+        uploadStatus.textContent = data.error || 'Upload failed.';
+      }
+    } catch (e) {
+      uploadStatus.textContent = 'Upload failed. Check your connection.';
+    }
+  });
+</script>
+
+</body>
+</html>
